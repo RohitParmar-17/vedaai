@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import Assignment from '../models/Assignment';
 import { assignmentQueue } from '../queues/assignmentQueue';
+import { processDirectly } from '../workers/generationWorker';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -55,6 +56,7 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
     });
 
     await assignmentQueue.add('generate', { assignmentId: assignment._id.toString() });
+    setTimeout(() => processDirectly(assignment._id.toString()), 500);
 
     res.status(201).json(assignment);
   } catch (err) {

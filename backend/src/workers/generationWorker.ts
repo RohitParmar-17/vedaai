@@ -3,12 +3,34 @@ import Assignment from '../models/Assignment';
 import { generateQuestionPaper } from '../services/geminiService';
 import { getIO } from '../socket';
 
+const url = new URL(process.env.REDIS_URL!);
 const workerConnection = {
-  host: process.env.REDIS_HOST!,
-  port: Number(process.env.REDIS_PORT),
-  password: process.env.REDIS_PASSWORD,
+  host: url.hostname,
+  port: Number(url.port),
+  password: url.password,
   maxRetriesPerRequest: null as any,
   enableReadyCheck: false,
+};
+
+export const processDirectly = async (assignmentId: string) => {
+  const io = getIO();
+  try {
+    console.log('Processing:', assignmentId);
+    const assignment = await Assignment.findById(assignmentId);
+    if (!assignment || assignment.status === 'done') return;
+
+    await Assignment.findByIdAndUpdate(assignmentId, { status: 'processing' });
+    io.to(assignmentId).emit('status', { status: 'processing' });
+
+    const result = await generateQuestionPaper(assignment);
+    await Assignment.findByIdAndUpdate(assignmentId, { status: 'done', result });
+    io.to(assignmentId).emit('status', { status: 'done', assignmentId });
+    console.log('Done:', assignmentId);
+  } catch (err: any) {
+    console.error('FAILED:', err.message);
+    await Assignment.findByIdAndUpdate(assignmentId, { status: 'failed', error: err.message });
+    io.to(assignmentId).emit('status', { status: 'failed', error: err.message });
+  }
 };
 
 export const initWorker = () => {
@@ -16,34 +38,17 @@ export const initWorker = () => {
     'assignment-generation',
     async (job) => {
       const { assignmentId } = job.data;
-      const io = getIO();
-      console.log('Processing job:', assignmentId);
-
-      await Assignment.findByIdAndUpdate(assignmentId, { status: 'processing' });
-      io.to(assignmentId).emit('status', { status: 'processing' });
-
       const assignment = await Assignment.findById(assignmentId);
-      if (!assignment) throw new Error('Assignment not found');
-
-      const result = await generateQuestionPaper(assignment);
-
-      await Assignment.findByIdAndUpdate(assignmentId, { status: 'done', result });
-      io.to(assignmentId).emit('status', { status: 'done', assignmentId });
-      console.log('Job done:', assignmentId);
+      if (!assignment || assignment.status === 'done') return;
+      await processDirectly(assignmentId);
     },
     { connection: workerConnection }
   );
 
   worker.on('failed', async (job, err) => {
-    console.error('JOB FAILED:', err.message);
-    if (!job) return;
-    const io = getIO();
-    await Assignment.findByIdAndUpdate(job.data.assignmentId, {
-      status: 'failed',
-      error: err.message,
-    });
-    io.to(job.data.assignmentId).emit('status', { status: 'failed', error: err.message });
+    console.error('BullMQ JOB FAILED:', err.message);
   });
 
+  console.log('BullMQ Worker initialized');
   return worker;
 };

@@ -49,12 +49,16 @@ export default function AssignmentPage() {
     });
 
     const poll = setInterval(async () => {
-      const updated = await api.getAssignment(id);
-      setAssignment(updated);
-      if (updated.status === 'done' || updated.status === 'failed') {
-        clearInterval(poll);
-      }
-    }, 3000);
+  try {
+    const updated = await api.getAssignment(id);
+    setAssignment(updated);
+    if (updated.status === 'done' || updated.status === 'failed') {
+      clearInterval(poll);
+    }
+  } catch {
+    // ignore poll errors
+  }
+}, 3000);
 
     return () => {
       socket.off('status');

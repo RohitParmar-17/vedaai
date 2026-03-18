@@ -1,9 +1,12 @@
 import { Queue } from 'bullmq';
 
+const url = new URL(process.env.REDIS_URL!);
+
 export const redisConnection = {
-  host: process.env.REDIS_HOST!,
-  port: Number(process.env.REDIS_PORT),
-  password: process.env.REDIS_PASSWORD,
+  host: url.hostname,
+  port: Number(url.port),
+  password: url.password,
+  username: url.username || 'default',
   maxRetriesPerRequest: null as any,
   enableReadyCheck: false,
 };
