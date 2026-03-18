@@ -4,10 +4,10 @@ import { generateQuestionPaper } from '../services/geminiService';
 import { getIO } from '../socket';
 
 const workerConnection = {
-  host: process.env.REDIS_HOST,
+  host: process.env.REDIS_HOST!,
   port: Number(process.env.REDIS_PORT),
   password: process.env.REDIS_PASSWORD,
-  maxRetriesPerRequest: null,
+  maxRetriesPerRequest: null as any,
   enableReadyCheck: false,
 };
 
@@ -17,6 +17,7 @@ export const initWorker = () => {
     async (job) => {
       const { assignmentId } = job.data;
       const io = getIO();
+      console.log('Processing job:', assignmentId);
 
       await Assignment.findByIdAndUpdate(assignmentId, { status: 'processing' });
       io.to(assignmentId).emit('status', { status: 'processing' });
@@ -28,22 +29,20 @@ export const initWorker = () => {
 
       await Assignment.findByIdAndUpdate(assignmentId, { status: 'done', result });
       io.to(assignmentId).emit('status', { status: 'done', assignmentId });
+      console.log('Job done:', assignmentId);
     },
     { connection: workerConnection }
   );
 
   worker.on('failed', async (job, err) => {
-    console.error('JOB FAILED:', err.message, err.stack);
+    console.error('JOB FAILED:', err.message);
     if (!job) return;
     const io = getIO();
     await Assignment.findByIdAndUpdate(job.data.assignmentId, {
       status: 'failed',
       error: err.message,
     });
-    io.to(job.data.assignmentId).emit('status', {
-      status: 'failed',
-      error: err.message,
-    });
+    io.to(job.data.assignmentId).emit('status', { status: 'failed', error: err.message });
   });
 
   return worker;

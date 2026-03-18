@@ -28,31 +28,40 @@ export default function AssignmentPage() {
   }, [id, router]);
 
   useEffect(() => {
-    load().then((data) => {
-      if (!data) return;
-      if (data.status === 'done' || data.status === 'failed') return;
+  load().then((data) => {
+    if (!data) return;
+    if (data.status === 'done' || data.status === 'failed') return;
 
-      const socket = getSocket();
-      joinRoom(id);
-
-      socket.on('status', async (payload: { status: string; assignmentId?: string }) => {
-        if (payload.status === 'done') {
-          const updated = await api.getAssignment(id);
-          setAssignment(updated);
-        } else if (payload.status === 'failed') {
-          setAssignment((prev) =>
-            prev ? { ...prev, status: 'failed', error: 'Generation failed' } : prev
-          );
-        } else {
-          setAssignment((prev) =>
-            prev ? { ...prev, status: payload.status as Assignment['status'] } : prev
-          );
-        }
-      });
-
-      return () => { socket.off('status'); };
+    const socket = getSocket();
+    joinRoom(id);
+    socket.on('status', async (payload: { status: string }) => {
+      if (payload.status === 'done') {
+        const updated = await api.getAssignment(id);
+        setAssignment(updated);
+        socket.off('status');
+      } else if (payload.status === 'failed') {
+        const updated = await api.getAssignment(id);
+        setAssignment(updated);
+        socket.off('status');
+      } else {
+        setAssignment((prev) => prev ? { ...prev, status: payload.status as Assignment['status'] } : prev);
+      }
     });
-  }, [id, load]);
+
+    const poll = setInterval(async () => {
+      const updated = await api.getAssignment(id);
+      setAssignment(updated);
+      if (updated.status === 'done' || updated.status === 'failed') {
+        clearInterval(poll);
+      }
+    }, 3000);
+
+    return () => {
+      socket.off('status');
+      clearInterval(poll);
+    };
+  });
+}, [id, load]);
 
   const handleRegenerate = async () => {
     setRegenerating(true);
