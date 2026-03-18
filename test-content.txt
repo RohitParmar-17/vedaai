@@ -1,0 +1,23 @@
+Chapter: Chemical Effects of Electric Current
+
+Electric current can have various effects when passed through a conducting solution.
+
+1. Electroplating is the process of depositing a layer of metal on another metal using electric current. It is used to prevent corrosion and improve appearance.
+
+2. Electrolysis is the process of decomposition of a substance by passing electric current through its solution. Water can be decomposed into hydrogen and oxygen by electrolysis.
+
+3. A conductor allows electric current to flow through it. Metals like copper, silver, and aluminum are good conductors. Solutions of acids, bases, and salts also conduct electricity.
+
+4. An electrolyte is a substance that conducts electricity in its dissolved or molten state. Examples include sodium chloride, hydrochloric acid, and copper sulfate.
+
+5. Electrodes are the conductors through which current enters or leaves the electrolyte. The positive electrode is called anode and the negative electrode is called cathode.
+
+6. During electrolysis of water, hydrogen gas is collected at cathode and oxygen gas is collected at anode.
+
+7. Copper sulfate solution conducts electricity because it contains free copper ions and sulfate ions.
+
+8. The chemical effect of electric current is used in electroplating, purification of metals, and extraction of metals from their ores.
+
+9. LED (Light Emitting Diode) glows when current passes through it and can be used to test if a solution conducts electricity.
+
+10. Brine (saltwater) when electrolyzed produces chlorine gas at anode, hydrogen gas at cathode, and sodium hydroxide solution.
